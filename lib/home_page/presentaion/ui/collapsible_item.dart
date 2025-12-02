@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../core/di/di.dart';
 import '../../data/model/home_tasks_Model.dart';
+import '../../../core/utils/loading_dialog.dart';
+import '../../../core/utils/snackbar.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rate_me/home_page/presentaion/bloc/rate_me_bloc.dart';
+import 'package:rate_me/home_page/presentaion/bloc/rate_me_state.dart';
+
+import '../../data/model/task_model.dart';
 
 class CollapsibleItem extends StatefulWidget {
   final HomeTasksModel item;
   final Function() onDelete;
-  final bool isSub;
-  final double subColorFactor;
+  final int depth;
 
   const CollapsibleItem({
     super.key,
     required this.item,
     required this.onDelete,
-    this.isSub = false,
-    this.subColorFactor = 0.0,
+    this.depth = 0,
   });
 
   @override
@@ -20,19 +27,16 @@ class CollapsibleItem extends StatefulWidget {
 }
 
 class _CollapsibleItemState extends State<CollapsibleItem> {
-  // Main task color
-  final Color mainColor = const Color(0xFF4A6CF7);
+  final List<Color> levelColors = const [
+    Color(0xFF4A6CF7),
+    Color(0xFF7D8FFF),
+    Color(0xFFA3ABE0),
+  ];
 
-  // Sub task color gradient
-  Color subTaskColor(double t) {
-    return Color.lerp(
-      const Color(0xFF7D8FFF),
-      const Color(0xFFAAAAC2),
-      t,
-    )!;
+  Color getLevelColor(int depth) {
+    return levelColors[depth];
   }
 
-  // Progress color steps
   Color progressStepColor(int progress) {
     if (progress <= 20) return Colors.red;
     if (progress <= 40) return Colors.orange;
@@ -43,102 +47,155 @@ class _CollapsibleItemState extends State<CollapsibleItem> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: widget.isSub
-          ? subTaskColor(widget.subColorFactor)  // Sub-task gradient color
-          : mainColor,                           // Main task solid color
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-
-      child: ExpansionTile(
-        collapsedBackgroundColor: Colors.transparent,
-        backgroundColor: Colors.transparent,
-        title: Text(
-          widget.item.title,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
-        ),
-
-        trailing: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.white),
-          onPressed: widget.onDelete,
-        ),
-
-        children: [
-          const SizedBox(height: 12),
-
-          // ⭐ 5 Stars (each = 20%)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (i) {
-              int starValue = (i + 1) * 20;
-
-              return IconButton(
-                icon: Icon(
-                  widget.item.progress >= starValue
-                      ? Icons.star
-                      : Icons.star_border,
-                  color: widget.item.progress >= starValue
-                      ? Colors.orange
-                      : Colors.white70,
-                ),
-                onPressed: () {
-                  setState(() {
-                    widget.item.progress = starValue;
-                  });
-                },
+    return BlocProvider(
+      create: (context) => sl<RateMeCubit>()..getAllTasks(),
+      child: BlocConsumer<RateMeCubit, RateMeState>(
+          listener: (context, state) {
+            if (state is DeleteTaskLoadingState) {
+              showLoading();
+            } else if (state is DeleteTaskErrorState) {
+              hideLoading();
+              showAppSnackBar(
+                context,
+                state.errorMessage,
+                type: SnackBarType.error,
               );
-            }),
-          ),
-
-          // 📊 Progress Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: widget.item.progress / 100,
-                minHeight: 10,
-                color: progressStepColor(widget.item.progress),
-                backgroundColor: Colors.white.withOpacity(0.3),
+            } else if (state is DeleteTaskSuccessState) {
+              hideLoading();
+              widget.onDelete();
+              // ------------------------------------------------------
+            } else if (state is UpdateTaskLoadingState) {
+              showLoading();
+            } else if (state is UpdateTaskErrorState) {
+              hideLoading();
+              showAppSnackBar(
+                context,
+                state.errorMessage,
+                type: SnackBarType.error,
+              );
+            } else if (state is UpdateTaskSuccessState) {
+              hideLoading();
+            }
+          },
+          builder: (context, state) {
+            return Card(
+              color: getLevelColor(widget.depth),
+              margin: EdgeInsets.symmetric(vertical: 8.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14.r),
               ),
-            ),
-          ),
 
-          const SizedBox(height: 12),
-
-          // Sub-items (recursive)
-          Column(
-            children: List.generate(widget.item.children.length, (i) {
-              final child = widget.item.children[i];
-
-              // Gradient factor based on position
-              double t = widget.item.children.length == 1
-                  ? 0
-                  : i / (widget.item.children.length - 1);
-
-              return Padding(
-                padding: const EdgeInsets.only(left: 20),
-                child: CollapsibleItem(
-                  item: child,
-                  onDelete: () {
-                    setState(() {
-                      widget.item.children.removeAt(i);
-                    });
-                  },
-                  isSub: true,
-                  subColorFactor: t,
+              child: ExpansionTile(
+                collapsedBackgroundColor: Colors.transparent,
+                backgroundColor: Colors.transparent,
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                shape: const RoundedRectangleBorder(
+                  side: BorderSide(color: Colors.transparent),
                 ),
-              );
-            }),
-          ),
+                collapsedShape: const RoundedRectangleBorder(
+                  side: BorderSide(color: Colors.transparent),
+                ),
+                title: Padding(
+                    padding: EdgeInsets.all(10.w),
+                    child: Row(
+                      children: [
+                        Text(
+                          widget.item.detail,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        widget.item.children.length > 1 ? SizedBox(width: 10.w,) : SizedBox.shrink(),
+                        widget.item.children.length > 1 ? Icon(Icons.collections_bookmark_rounded, color: Colors.white,size: 20.w) : SizedBox.shrink()
+                      ],
+                    )
+                ),
 
-          const SizedBox(height: 12),
-        ],
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.white),
+                  onPressed: () {
+                    RateMeCubit.get(context).deleteTask(widget.item.taskId);
+                  },
+                ),
+
+                children: [
+                  SizedBox(height: 12.h),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (i) {
+                      int starValue = (i + 1) * 20;
+
+                      return IconButton(
+                        icon: Icon(
+                          widget.item.rateValue >= starValue
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: widget.item.rateValue >= starValue
+                              ? Colors.orange
+                              : Colors.white70,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            widget.item.rateValue = starValue;
+                          });
+                          TaskModel taskModel = TaskModel(
+                            detail: widget.item.detail,
+                            following: false,
+                            mainId: widget.item.mainId,
+                            rateValue: starValue,
+                            taskId: widget.item.taskId
+                          );
+                          RateMeCubit.get(context).updateTask(taskModel);
+                        },
+                      );
+                    }),
+                  ),
+
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 18.w),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10.r),
+                      child: LinearProgressIndicator(
+                        value: widget.item.rateValue / 100,
+                        minHeight: 10.h,
+                        color: progressStepColor(widget.item.rateValue),
+                        backgroundColor: Colors.white.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 12.h),
+
+                  Column(
+                    children: List.generate(widget.item.children.length, (i) {
+                      final child = widget.item.children[i];
+
+                      return Padding(
+                        padding: EdgeInsets.fromLTRB(20.w,0,20.w,0),
+                        child: CollapsibleItem(
+                          item: child,
+                          onDelete: () {
+                            setState(() {
+                              widget.item.children.removeAt(i);
+                            });
+                          },
+                          depth: widget.depth + 1,
+                        ),
+                      );
+                    }),
+                  ),
+
+                  SizedBox(height: 12.h),
+                ],
+              ),
+            );
+          }
       ),
     );
   }
 }
-
-

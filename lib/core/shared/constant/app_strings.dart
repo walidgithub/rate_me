@@ -8,4 +8,6 @@ class AppStrings {
   static const String start = "ابدأ";
   static const String minute = "دقيقة";
   static const String alert = "تنبية كل:";
+  static const String found = "هذه التاسك موجودة بالفعل";
+  static const String loading = "تميل";
 }

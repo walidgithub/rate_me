@@ -1,6 +1,6 @@
 class TaskModel {
-  final int taskId;
-  final int mainId;
+  final String taskId;
+  final String mainId;
   final String detail;
   final int rateValue;
   final bool following;
@@ -15,8 +15,8 @@ class TaskModel {
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     return TaskModel(
-      taskId: json['taskI_id'] ?? 0,
-      mainId: json['main_id'] ?? 0,
+      taskId: json['taskI_id'] ?? '',
+      mainId: json['main_id'] ?? '',
       detail: json['detail'] ?? '',
       rateValue: json['rate_value'] ?? 0,
       following: json['following'] ?? false,
