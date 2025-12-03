@@ -101,6 +101,8 @@ class _MyHomePageState extends State<MyHomePage> {
             );
           } else if (state is InsertTaskSuccessState) {
             hideLoading();
+            _taskNameTextController.text = "";
+            showAppSnackBar(context, AppStrings.success);
           }
         },
         builder: (context, state) {
@@ -113,10 +115,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: [
                     Expanded(
                       child: _currentIndex == 0
-                          ? _buildHomePage()
+                          ? _buildHomePage(context)
                           : _currentIndex == 1
-                          ? _buildAddTask()
-                          : _buildAddAlert(),
+                          ? _buildAddTask(context)
+                          : _buildAddAlert(context),
                     ),
                   ],
                 ),
@@ -179,7 +181,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildHomePage() {
+  Widget _buildHomePage(BuildContext context) {
     return Column(
       children: [
         Expanded(
@@ -202,7 +204,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildAddTask() {
+  Widget _buildAddTask(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(15.w),
       child: Column(
@@ -220,7 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Text(
                 AppStrings.subTask,
-                style: TextStyle(color: AppColors.cPrimary),
+                style: TextStyle(color: AppColors.cPrimary, fontSize: 20.sp),
               ),
             ],
           ),
@@ -273,7 +275,7 @@ class _MyHomePageState extends State<MyHomePage> {
           TextField(
             controller: _taskNameTextController,
             keyboardType: TextInputType.text,
-            style: TextStyle(color: Colors.white, fontSize: 20.sp),
+            style: TextStyle(color: AppColors.cPrimary, fontSize: 20.sp),
             decoration: InputDecoration(
               hintText: AppStrings.taskName,
               hintStyle: TextStyle(color: AppColors.cPrimary),
@@ -333,7 +335,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildAddAlert() {
+  Widget _buildAddAlert(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(15.w),
       child: Column(

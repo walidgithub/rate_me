@@ -15,7 +15,7 @@ class TaskModel {
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     return TaskModel(
-      taskId: json['taskI_id'] ?? '',
+      taskId: json['task_id'] ?? '',
       mainId: json['main_id'] ?? '',
       detail: json['detail'] ?? '',
       rateValue: json['rate_value'] ?? 0,
@@ -25,7 +25,7 @@ class TaskModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'taskI_id': taskId,
+      'task_id': taskId,
       'main_id': mainId,
       'detail': detail,
       'rate_value': rateValue,

@@ -39,6 +39,8 @@ class RateMeRepositoryImpl extends RateMeRepository {
       final result = await _rateMeDataSource.insertTask(taskModel);
       return Right(result);
     } catch (error) {
+      print("logggg1111111111111111");
+      print(error);
       return Left(ErrorHandler.handle(error).failure);
     }
   }

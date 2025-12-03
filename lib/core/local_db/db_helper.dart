@@ -38,6 +38,7 @@ class DbHelper {
     );
 
     if (existing.isNotEmpty) {
+      print("logggg-----------------------");
       throw(AppStrings.found);
     }
 

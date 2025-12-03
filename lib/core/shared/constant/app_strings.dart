@@ -1,7 +1,7 @@
 class AppStrings {
   static const String appName = "تقييمى";
   static const String success = "تم بنجاح";
-  static const String someThingWentWrong = "فى حاجة غلط";
+  static const String someThingWentWrong = "حدث خطأ ما!";
   static const String subTask = "مهمة فرعية";
   static const String taskName = "اسم المهمة";
   static const String save = "حفظ";

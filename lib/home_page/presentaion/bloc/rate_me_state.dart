@@ -2,7 +2,7 @@ import 'package:rate_me/home_page/data/model/task_model.dart';
 
 abstract class RateMeState{}
 
-class HomePageInitial extends RateMeState{}
+class RateMeInitial extends RateMeState{}
 
 class GetTasksSuccessState extends RateMeState{
   final List<TaskModel> tasksList;

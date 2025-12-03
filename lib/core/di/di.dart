@@ -17,11 +17,8 @@ class ServiceLocator {
     // dbHelper
     sl.registerLazySingleton<DbHelper>(() => DbHelper());
 
-    // DataSources
-    sl.registerLazySingleton<RateMeDataSourceImpl>(() => RateMeDataSourceImpl(sl()));
-
-    // Repositories
-    sl.registerLazySingleton<RateMeRepository>(() => RateMeRepositoryImpl(sl()));
+    // Bloc
+    sl.registerFactory(() => RateMeCubit(sl(), sl(), sl(), sl()));
 
     // useCases
     sl.registerLazySingleton<InsertTaskUseCase>(() => InsertTaskUseCase(sl()));
@@ -29,7 +26,10 @@ class ServiceLocator {
     sl.registerLazySingleton<UpdateTaskUseCase>(() => UpdateTaskUseCase(sl()));
     sl.registerLazySingleton<GetAllTasksUseCase>(() => GetAllTasksUseCase(sl()));
 
-    // Bloc
-    sl.registerFactory(() => RateMeCubit(sl(), sl(), sl(), sl()));
+    // Repositories
+    sl.registerLazySingleton<RateMeRepository>(() => RateMeRepositoryImpl(sl()));
+
+    // DataSources
+    sl.registerLazySingleton<RateMeDataSource>(() => RateMeDataSourceImpl(sl()));
   }
 }

@@ -13,7 +13,7 @@ class RateMeCubit extends Cubit<RateMeState> {
     this.insertTaskUseCase,
     this.updateTaskUseCase,
     this.deleteTaskUseCase,
-  ) : super(HomePageInitial());
+  ) : super(RateMeInitial());
 
   final GetAllTasksUseCase getAllTasksUseCase;
   final InsertTaskUseCase insertTaskUseCase;

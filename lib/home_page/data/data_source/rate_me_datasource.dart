@@ -41,6 +41,8 @@ class RateMeDataSourceImpl extends RateMeDataSource {
     try {
       return res;
     } catch (e) {
+      print("logggg000000000000");
+      print(e.toString());
       throw e.toString();
     }
   }
