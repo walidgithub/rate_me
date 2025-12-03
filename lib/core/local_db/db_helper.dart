@@ -25,22 +25,17 @@ class DbHelper {
 
   Future createDB(Database db, int version) async {
     await db.execute(
-        'create table rate_me(task_id varchar(50), main_id varchar(50), detail varchar(100), rate_value integer, following boolean)');
+        'create table rate_me(task_id varchar(50), main_id varchar(50), detail varchar(100), rate_value integer)');
   }
 
   Future<void> insertTask(TaskModel taskModel) async {
     final db = _db!.database;
 
-    final existing = await db.query(
+    await db.query(
       'rate_me',
       where: 'detail = ?',
       whereArgs: [taskModel.detail],
     );
-
-    if (existing.isNotEmpty) {
-      print("logggg-----------------------");
-      throw(AppStrings.found);
-    }
 
     await db.insert('rate_me', taskModel.toJson());
   }
@@ -51,7 +46,15 @@ class DbHelper {
       await initDB(dbdName);
     }
     final db = _db!.database;
-    db.delete('rate_me', where: 'task_id = ?', whereArgs: [taskId]);
+    await db.delete('rate_me', where: 'task_id = ?', whereArgs: [taskId]);
+  }
+
+  Future<void> deleteAllTasks() async {
+    if (_db == null) {
+      await initDB(dbdName);
+    }
+    final db = _db!.database;
+    await db.delete('rate_me');
   }
 
   Future<void> updateTask(TaskModel taskModel) async {
@@ -60,9 +63,26 @@ class DbHelper {
     }
 
     final db = _db!.database;
-    db.update('rate_me', taskModel.toJson(),
+    await db.update('rate_me', taskModel.toJson(),
         where: 'task_id = ?', whereArgs: [taskModel.taskId]);
   }
+
+  Future<void> resetAllTasks() async {
+    if (_db == null) {
+      await initDB(dbdName);
+    }
+
+    final db = _db!.database;
+
+    await db.update(
+      'rate_me',
+      {
+        'detail': '',
+        'rate_value': 0
+      },
+    );
+  }
+
 
   Future<List<TaskModel>> getAllTasks() async {
     if (_db == null) {

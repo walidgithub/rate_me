@@ -5,6 +5,8 @@ abstract class RateMeDataSource {
   Future<void> insertTask(TaskModel taskModel);
   Future<void> deleteTask(String taskId);
   Future<void> updateTask(TaskModel taskModel);
+  Future<void> deleteAllTasks();
+  Future<void> resetAllTasks();
   Future<List<TaskModel>> getAllTasks();
 }
 
@@ -41,8 +43,6 @@ class RateMeDataSourceImpl extends RateMeDataSource {
     try {
       return res;
     } catch (e) {
-      print("logggg000000000000");
-      print(e.toString());
       throw e.toString();
     }
   }
@@ -50,6 +50,26 @@ class RateMeDataSourceImpl extends RateMeDataSource {
   @override
   Future<void> updateTask(TaskModel taskModel) async {
     final res = await _dbHelper.updateTask(taskModel);
+    try {
+      return res;
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  @override
+  Future<void> deleteAllTasks() async {
+    final res = await _dbHelper.deleteAllTasks();
+    try {
+      return res;
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  @override
+  Future<void> resetAllTasks() async {
+    final res = await _dbHelper.resetAllTasks();
     try {
       return res;
     } catch (e) {

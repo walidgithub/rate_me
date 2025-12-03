@@ -39,8 +39,6 @@ class RateMeRepositoryImpl extends RateMeRepository {
       final result = await _rateMeDataSource.insertTask(taskModel);
       return Right(result);
     } catch (error) {
-      print("logggg1111111111111111");
-      print(error);
       return Left(ErrorHandler.handle(error).failure);
     }
   }
@@ -49,6 +47,26 @@ class RateMeRepositoryImpl extends RateMeRepository {
   Future<Either<Failure, void>> updateTask(TaskModel taskModel) async {
     try {
       final result = await _rateMeDataSource.updateTask(taskModel);
+      return Right(result);
+    } catch (error) {
+      return Left(ErrorHandler.handle(error).failure);
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteAllTasks() async {
+    try {
+      final result = await _rateMeDataSource.deleteAllTasks();
+      return Right(result);
+    } catch (error) {
+      return Left(ErrorHandler.handle(error).failure);
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resetAllTasks() async {
+    try {
+      final result = await _rateMeDataSource.resetAllTasks();
       return Right(result);
     } catch (error) {
       return Left(ErrorHandler.handle(error).failure);

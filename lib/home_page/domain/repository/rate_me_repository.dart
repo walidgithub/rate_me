@@ -6,5 +6,7 @@ abstract class RateMeRepository {
   Future<Either<Failure, void>> insertTask(TaskModel taskModel);
   Future<Either<Failure, void>> deleteTask(String taskId);
   Future<Either<Failure, void>> updateTask(TaskModel taskModel);
+  Future<Either<Failure, void>> deleteAllTasks();
+  Future<Either<Failure, void>> resetAllTasks();
   Future<Either<Failure, List<TaskModel>>> getAllTasks();
 }

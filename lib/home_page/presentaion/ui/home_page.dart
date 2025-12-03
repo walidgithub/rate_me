@@ -30,6 +30,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final TextEditingController _taskNameTextController = TextEditingController();
   String? selectedTask;
+  String? mainTaskId;
   int count = 1;
   int min = 1;
   int max = 15;
@@ -103,6 +104,32 @@ class _MyHomePageState extends State<MyHomePage> {
             hideLoading();
             _taskNameTextController.text = "";
             showAppSnackBar(context, AppStrings.success);
+            // ------------------------------------------------------
+          } else if (state is DeleteAllTasksLoadingState) {
+            showLoading();
+          } else if (state is DeleteAllTasksErrorState) {
+            hideLoading();
+            showAppSnackBar(
+              context,
+              state.errorMessage,
+              type: SnackBarType.error,
+            );
+          } else if (state is DeleteAllTasksSuccessState) {
+            hideLoading();
+            RateMeCubit.get(context).getAllTasks();
+            // ------------------------------------------------------
+          } else if (state is ResetAllTasksLoadingState) {
+            showLoading();
+          } else if (state is ResetAllTasksErrorState) {
+            hideLoading();
+            showAppSnackBar(
+              context,
+              state.errorMessage,
+              type: SnackBarType.error,
+            );
+          } else if (state is ResetAllTasksSuccessState) {
+            hideLoading();
+            RateMeCubit.get(context).getAllTasks();
           }
         },
         builder: (context, state) {
@@ -184,6 +211,23 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildHomePage(BuildContext context) {
     return Column(
       children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              icon: Icon(Icons.delete, color: AppColors.cError),
+              onPressed: () {
+                RateMeCubit.get(context).deleteAllTasks();
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.loop, color: AppColors.cPrimary),
+              onPressed: () {
+                RateMeCubit.get(context).resetAllTasks();
+              },
+            ),
+          ],
+        ),
         Expanded(
           child: ListView.builder(
             padding: EdgeInsets.all(16.w),
@@ -195,7 +239,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   setState(() {
                     items.removeAt(index);
                   });
-                }
+                },
               );
             },
           ),
@@ -218,6 +262,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   setState(() {
                     subTask = value!;
                   });
+                  RateMeCubit.get(context).getAllTasks();
                 },
               ),
               Text(
@@ -263,6 +308,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       onChanged: (value) {
                         setStateDropdown(() {
                           selectedTask = value;
+                          mainTaskId = tasksList.firstWhere((task) {
+                            return task.detail == value;
+                          }).taskId;
                         });
                       },
                     );
@@ -292,14 +340,23 @@ class _MyHomePageState extends State<MyHomePage> {
             onTap: () {
               var uuid = Uuid();
               String id = uuid.v4();
-              TaskModel taskModel = TaskModel(
-                detail: _taskNameTextController.text,
-                following: false,
-                mainId: "",
-                rateValue: 0,
-                taskId: id,
-              );
-              RateMeCubit.get(context).insertTask(taskModel);
+              if (subTask) {
+                TaskModel taskModel = TaskModel(
+                  detail: _taskNameTextController.text,
+                  mainId: mainTaskId!,
+                  rateValue: 0,
+                  taskId: id,
+                );
+                RateMeCubit.get(context).insertTask(taskModel);
+              } else {
+                TaskModel taskModel = TaskModel(
+                  detail: _taskNameTextController.text,
+                  mainId: "",
+                  rateValue: 0,
+                  taskId: id,
+                );
+                RateMeCubit.get(context).insertTask(taskModel);
+              }
             },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20.r),

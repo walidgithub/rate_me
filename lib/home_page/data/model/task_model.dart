@@ -3,14 +3,12 @@ class TaskModel {
   final String mainId;
   final String detail;
   final int rateValue;
-  final bool following;
 
   TaskModel({
     required this.taskId,
     required this.mainId,
     required this.detail,
-    required this.rateValue,
-    required this.following,
+    required this.rateValue
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -18,8 +16,7 @@ class TaskModel {
       taskId: json['task_id'] ?? '',
       mainId: json['main_id'] ?? '',
       detail: json['detail'] ?? '',
-      rateValue: json['rate_value'] ?? 0,
-      following: json['following'] ?? false,
+      rateValue: json['rate_value'] ?? 0
     );
   }
 
@@ -28,8 +25,7 @@ class TaskModel {
       'task_id': taskId,
       'main_id': mainId,
       'detail': detail,
-      'rate_value': rateValue,
-      'following': following,
+      'rate_value': rateValue
     };
   }
 }

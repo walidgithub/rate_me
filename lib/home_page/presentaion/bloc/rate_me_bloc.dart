@@ -1,6 +1,8 @@
 import 'package:rate_me/home_page/domain/usecases/base_usecase/base_usecase.dart';
+import 'package:rate_me/home_page/domain/usecases/delete_all_tasks_usecase.dart';
 import 'package:rate_me/home_page/domain/usecases/delete_task_usecase.dart';
 import 'package:rate_me/home_page/domain/usecases/get_tasks_usecase.dart';
+import 'package:rate_me/home_page/domain/usecases/reset_all_tasks_usecase.dart';
 import 'package:rate_me/home_page/domain/usecases/update_task_usecase.dart';
 import 'package:rate_me/home_page/presentaion/bloc/rate_me_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,12 +15,16 @@ class RateMeCubit extends Cubit<RateMeState> {
     this.insertTaskUseCase,
     this.updateTaskUseCase,
     this.deleteTaskUseCase,
+    this.resetAllTasksUseCase,
+    this.deleteAllTasksUseCase,
   ) : super(RateMeInitial());
 
   final GetAllTasksUseCase getAllTasksUseCase;
   final InsertTaskUseCase insertTaskUseCase;
   final UpdateTaskUseCase updateTaskUseCase;
   final DeleteTaskUseCase deleteTaskUseCase;
+  final ResetAllTasksUseCase resetAllTasksUseCase;
+  final DeleteAllTasksUseCase deleteAllTasksUseCase;
 
   static RateMeCubit get(context) => BlocProvider.of(context);
 
@@ -37,6 +43,24 @@ class RateMeCubit extends Cubit<RateMeState> {
     result.fold(
       (failure) => emit(GetTasksErrorState(failure.message)),
       (tasks) => emit(GetTasksSuccessState(tasks)),
+    );
+  }
+
+  Future<void> deleteAllTasks() async {
+    emit(DeleteAllTasksLoadingState());
+    final result = await deleteAllTasksUseCase.call(const NoParameters());
+    result.fold(
+          (failure) => emit(DeleteAllTasksErrorState(failure.message)),
+          (deletedAll) => emit(DeleteAllTasksSuccessState()),
+    );
+  }
+
+  Future<void> resetAllTasks() async {
+    emit(ResetAllTasksLoadingState());
+    final result = await resetAllTasksUseCase.call(const NoParameters());
+    result.fold(
+          (failure) => emit(ResetAllTasksErrorState(failure.message)),
+          (resetAll) => emit(ResetAllTasksSuccessState()),
     );
   }
 

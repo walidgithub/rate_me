@@ -6,11 +6,8 @@ class ErrorHandler implements Exception {
 
   ErrorHandler.handle(dynamic error) {
     switch (error) {
-      case AppStrings.found:
-        failure = DataSource.DEFAULT.getFailure();
-        break;
       case AppStrings.success:
-        failure = DataSource.DEFAULT.getFailure();
+        failure = DataSource.SUCCESS.getFailure();
         break;
       default:
         failure = DataSource.DEFAULT.getFailure();
@@ -18,15 +15,13 @@ class ErrorHandler implements Exception {
   }
 }
 
-enum DataSource { SUCCESS, FOUND, DEFAULT }
+enum DataSource { SUCCESS, DEFAULT }
 
 extension DataSourceExtension on DataSource {
   Failure getFailure() {
     switch (this) {
       case DataSource.SUCCESS:
         return Failure(ResponseMessage.SUCCESS);
-      case DataSource.FOUND:
-        return Failure(ResponseMessage.FOUND);
       case DataSource.DEFAULT:
         return Failure(ResponseMessage.DEFAULT);
     }
@@ -34,7 +29,6 @@ extension DataSourceExtension on DataSource {
 }
 
 class ResponseMessage {
-  static const String FOUND = AppStrings.found;
   static const String SUCCESS = AppStrings.success;
   static const String DEFAULT = AppStrings.someThingWentWrong;
 }

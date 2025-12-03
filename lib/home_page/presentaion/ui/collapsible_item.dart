@@ -145,7 +145,6 @@ class _CollapsibleItemState extends State<CollapsibleItem> {
                           });
                           TaskModel taskModel = TaskModel(
                             detail: widget.item.detail,
-                            following: false,
                             mainId: widget.item.mainId,
                             rateValue: starValue,
                             taskId: widget.item.taskId
