@@ -1,4 +1,3 @@
-import 'package:rate_me/core/shared/constant/app_strings.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../home_page/data/model/task_model.dart';
@@ -6,7 +5,7 @@ import '../../home_page/data/model/task_model.dart';
 class DbHelper {
   Database? _db;
 
-  String dbdName = 'rate_me.db';
+  String dbdName = 'rate_me4.db';
 
   Future<Database> get database async {
     if (_db != null) {
@@ -25,17 +24,11 @@ class DbHelper {
 
   Future createDB(Database db, int version) async {
     await db.execute(
-        'create table rate_me(task_id varchar(50), main_id varchar(50), detail varchar(100), rate_value integer)');
+        'create table rate_me(id integer primary key autoincrement, task_id varchar(50), main_id varchar(50), task_name varchar(100), rate_value integer)');
   }
 
   Future<void> insertTask(TaskModel taskModel) async {
     final db = _db!.database;
-
-    await db.query(
-      'rate_me',
-      where: 'detail = ?',
-      whereArgs: [taskModel.detail],
-    );
 
     await db.insert('rate_me', taskModel.toJson());
   }
@@ -77,7 +70,6 @@ class DbHelper {
     await db.update(
       'rate_me',
       {
-        'detail': '',
         'rate_value': 0
       },
     );
@@ -92,7 +84,7 @@ class DbHelper {
     final db = _db!.database;
 
     final result =
-    await db.rawQuery('SELECT * FROM rate_me Order by task_id ASC');
+    await db.rawQuery('SELECT * FROM rate_me');
 
     return result.map((json) => TaskModel.fromJson(json)).toList();
   }

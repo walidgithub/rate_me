@@ -101,7 +101,7 @@ class _CollapsibleItemState extends State<CollapsibleItem> {
                     child: Row(
                       children: [
                         Text(
-                          widget.item.detail,
+                          widget.item.task,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 17.sp,
@@ -144,7 +144,7 @@ class _CollapsibleItemState extends State<CollapsibleItem> {
                             widget.item.rateValue = starValue;
                           });
                           TaskModel taskModel = TaskModel(
-                            detail: widget.item.detail,
+                            task: widget.item.task,
                             mainId: widget.item.mainId,
                             rateValue: starValue,
                             taskId: widget.item.taskId

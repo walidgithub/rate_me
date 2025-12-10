@@ -1,13 +1,13 @@
 class TaskModel {
   final String taskId;
   final String mainId;
-  final String detail;
+  final String task;
   final int rateValue;
 
   TaskModel({
     required this.taskId,
     required this.mainId,
-    required this.detail,
+    required this.task,
     required this.rateValue
   });
 
@@ -15,7 +15,7 @@ class TaskModel {
     return TaskModel(
       taskId: json['task_id'] ?? '',
       mainId: json['main_id'] ?? '',
-      detail: json['detail'] ?? '',
+      task: json['task_name'] ?? '',
       rateValue: json['rate_value'] ?? 0
     );
   }
@@ -24,7 +24,7 @@ class TaskModel {
     return {
       'task_id': taskId,
       'main_id': mainId,
-      'detail': detail,
+      'task_name': task,
       'rate_value': rateValue
     };
   }

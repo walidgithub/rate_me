@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
@@ -10,7 +9,6 @@ import 'package:rate_me/home_page/presentaion/bloc/rate_me_bloc.dart';
 import 'package:rate_me/home_page/presentaion/bloc/rate_me_state.dart';
 import 'package:rate_me/home_page/presentaion/ui/collapsible_item.dart';
 import 'package:uuid/uuid.dart';
-
 import '../../../core/di/di.dart';
 import '../../../core/shared/constant/app_strings.dart';
 import '../../../core/utils/loading_dialog.dart';
@@ -51,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return HomeTasksModel(
         taskId: task.taskId,
         mainId: task.mainId,
-        detail: task.detail,
+        task: task.task,
         rateValue: task.rateValue,
         children: (childrenMap[task.taskId] ?? [])
             .map((child) => buildNode(child))
@@ -89,7 +87,16 @@ class _MyHomePageState extends State<MyHomePage> {
           } else if (state is GetTasksSuccessState) {
             hideLoading();
             tasksList = state.tasksList;
+            for (var v in tasksList) {
+              print(v.task);
+              print(v.mainId);
+            }
             items = buildTasksTree(tasksList);
+            for (var v in items) {
+              print(v.task);
+              print(v.mainId);
+              print(v.children);
+            }
             // ------------------------------------------------------
           } else if (state is InsertTaskLoadingState) {
             showLoading();
@@ -220,11 +227,33 @@ class _MyHomePageState extends State<MyHomePage> {
                 RateMeCubit.get(context).deleteAllTasks();
               },
             ),
-            IconButton(
-              icon: Icon(Icons.loop, color: AppColors.cPrimary),
-              onPressed: () {
-                RateMeCubit.get(context).resetAllTasks();
-              },
+            Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.loop, color: AppColors.cPrimary),
+                  onPressed: () {
+                    RateMeCubit.get(context).resetAllTasks();
+                  },
+                ),
+                Text(
+                  AppStrings.reset,
+                  style: TextStyle(color: AppColors.cPrimary, fontSize: 15.sp),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.refresh, color: AppColors.cPrimary),
+                  onPressed: () {
+                    RateMeCubit.get(context).getAllTasks();
+                  },
+                ),
+                Text(
+                  AppStrings.reload,
+                  style: TextStyle(color: AppColors.cPrimary, fontSize: 15.sp),
+                ),
+              ],
             ),
           ],
         ),
@@ -301,15 +330,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       items: tasksList.map((task) {
                         return DropdownMenuItem(
-                          value: task.detail, // ✔ dropdown value
-                          child: Text(task.detail), // ✔ dropdown display text
+                          value: task.task, // ✔ dropdown value
+                          child: Text(task.task), // ✔ dropdown display text
                         );
                       }).toList(),
                       onChanged: (value) {
                         setStateDropdown(() {
                           selectedTask = value;
                           mainTaskId = tasksList.firstWhere((task) {
-                            return task.detail == value;
+                            return task.task == value;
                           }).taskId;
                         });
                       },
@@ -338,22 +367,25 @@ class _MyHomePageState extends State<MyHomePage> {
 
           Bounceable(
             onTap: () {
+              if (_taskNameTextController.text.trim().isEmpty) {
+                return;
+              }
               var uuid = Uuid();
               String id = uuid.v4();
               if (subTask) {
                 TaskModel taskModel = TaskModel(
-                  detail: _taskNameTextController.text,
-                  mainId: mainTaskId!,
-                  rateValue: 0,
                   taskId: id,
+                  mainId: mainTaskId!,
+                  task: _taskNameTextController.text,
+                  rateValue: 0,
                 );
                 RateMeCubit.get(context).insertTask(taskModel);
               } else {
                 TaskModel taskModel = TaskModel(
-                  detail: _taskNameTextController.text,
-                  mainId: "",
-                  rateValue: 0,
                   taskId: id,
+                  mainId: "",
+                  task: _taskNameTextController.text,
+                  rateValue: 0,
                 );
                 RateMeCubit.get(context).insertTask(taskModel);
               }

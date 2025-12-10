@@ -9,4 +9,6 @@ class AppStrings {
   static const String minute = "دقيقة";
   static const String alert = "تنبية كل:";
   static const String loading = "تميل";
+  static const String reset = "تصفير القيم";
+  static const String reload = "إعادة تحميل";
 }
