@@ -9,12 +9,14 @@ import 'package:rate_me/home_page/presentaion/bloc/rate_me_bloc.dart';
 import 'package:rate_me/home_page/presentaion/bloc/rate_me_state.dart';
 import 'package:rate_me/home_page/presentaion/ui/collapsible_item.dart';
 import 'package:uuid/uuid.dart';
+import 'package:workmanager/workmanager.dart';
 import '../../../core/di/di.dart';
 import '../../../core/shared/constant/app_strings.dart';
 import '../../../core/utils/loading_dialog.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../data/model/home_tasks_Model.dart';
 import '../../data/model/task_model.dart';
+import 'package:vibration/vibration.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -62,6 +64,15 @@ class _MyHomePageState extends State<MyHomePage> {
     final roots = tasks.where((t) => t.mainId.isEmpty);
 
     return roots.map(buildNode).toList();
+  }
+
+  Future<void> vibrateEveryMinutes(int minutes, String taskName) async {
+    await Workmanager().registerPeriodicTask(
+      "periodicVibration$minutes",
+      taskName,
+      frequency: Duration(minutes: minutes),
+      inputData: {"minutes": minutes},
+    );
   }
 
   @override
@@ -516,7 +527,9 @@ class _MyHomePageState extends State<MyHomePage> {
           SizedBox(height: 20.h),
 
           Bounceable(
-            onTap: () {},
+            onTap: () {
+              vibrateEveryMinutes(count, "rate_me_vibration");
+            },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20.r),
               child: BackdropFilter(
