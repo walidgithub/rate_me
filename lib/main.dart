@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:vibration/vibration.dart';
 import 'package:workmanager/workmanager.dart';
 import 'core/di/di.dart';
 import 'core/router/app_router.dart';
 import 'core/shared/constant/app_strings.dart';
 import 'core/shared/style/app_theme.dart';
-import 'home_page/presentaion/ui/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
