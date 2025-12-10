@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:rate_me/core/shared/style/app_colors.dart';
 import '../../../core/di/di.dart';
 import '../../data/model/home_tasks_Model.dart';
 import '../../../core/utils/loading_dialog.dart';
@@ -28,9 +29,9 @@ class CollapsibleItem extends StatefulWidget {
 
 class _CollapsibleItemState extends State<CollapsibleItem> {
   final List<Color> levelColors = const [
-    Color(0xFF4A6CF7),
-    Color(0xFF7D8FFF),
-    Color(0xFFA3ABE0),
+    AppColors.cLevel1,
+    AppColors.cLevel2,
+    AppColors.cLevel3,
   ];
 
   Color getLevelColor(int depth) {
@@ -38,11 +39,11 @@ class _CollapsibleItemState extends State<CollapsibleItem> {
   }
 
   Color progressStepColor(int progress) {
-    if (progress <= 20) return Colors.red;
-    if (progress <= 40) return Colors.orange;
-    if (progress <= 60) return Colors.yellow;
-    if (progress <= 80) return Colors.lightGreen;
-    return Colors.green;
+    if (progress <= 20) return AppColors.cProgressLevel1;
+    if (progress <= 40) return AppColors.cProgressLevel2;
+    if (progress <= 60) return AppColors.cProgressLevel3;
+    if (progress <= 80) return AppColors.cProgressLevel4;
+    return AppColors.cProgressLevel5;
   }
 
   @override
@@ -108,8 +109,8 @@ class _CollapsibleItemState extends State<CollapsibleItem> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        widget.item.children.length > 1 ? SizedBox(width: 10.w,) : SizedBox.shrink(),
-                        widget.item.children.length > 1 ? Icon(Icons.collections_bookmark_rounded, color: Colors.white,size: 20.w) : SizedBox.shrink()
+                        widget.item.children.isNotEmpty ? SizedBox(width: 10.w,) : SizedBox.shrink(),
+                        widget.item.children.isNotEmpty ? Icon(Icons.collections_bookmark_rounded, color: Colors.white,size: 20.w) : SizedBox.shrink()
                       ],
                     )
                 ),
@@ -136,7 +137,7 @@ class _CollapsibleItemState extends State<CollapsibleItem> {
                               ? Icons.star
                               : Icons.star_border,
                           color: widget.item.rateValue >= starValue
-                              ? Colors.orange
+                              ? progressStepColor(widget.item.rateValue)
                               : Colors.white70,
                         ),
                         onPressed: () {

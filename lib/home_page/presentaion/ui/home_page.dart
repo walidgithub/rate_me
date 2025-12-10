@@ -28,6 +28,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final TextEditingController _taskNameTextController = TextEditingController();
   String? selectedTask;
+  String? selectedTaskToDelete;
   String? mainTaskId;
   int count = 1;
   int min = 1;
@@ -36,35 +37,29 @@ class _MyHomePageState extends State<MyHomePage> {
   List<TaskModel> tasksList = [];
 
   List<HomeTasksModel> buildTasksTree(List<TaskModel> tasks) {
-    // Map: parentId → list of children
     final Map<String, List<TaskModel>> childrenMap = {};
 
+    // بناء قائمة الأبناء
     for (var task in tasks) {
       childrenMap.putIfAbsent(task.mainId, () => []);
       childrenMap[task.mainId]!.add(task);
     }
 
-    // Convert TaskModel → HomeTasksModel
     HomeTasksModel buildNode(TaskModel task) {
       return HomeTasksModel(
         taskId: task.taskId,
         mainId: task.mainId,
         task: task.task,
         rateValue: task.rateValue,
-        children: (childrenMap[task.taskId] ?? [])
-            .map((child) => buildNode(child))
-            .toList(),
+        children: childrenMap[task.taskId]
+            ?.map((child) => buildNode(child))
+            .toList() ??
+            [],
       );
     }
 
-    // Get all ids
-    final Set<String> allTaskIds = tasks.map((t) => t.taskId).toSet();
-    final Set<String> referencedIds = tasks.map((t) => t.mainId).toSet();
-
-    // Roots are tasks nobody points to
-    final rootIds = allTaskIds.difference(referencedIds);
-
-    final roots = tasks.where((t) => rootIds.contains(t.taskId));
+    // استخراج الجذور
+    final roots = tasks.where((t) => t.mainId.isEmpty);
 
     return roots.map(buildNode).toList();
   }
@@ -87,16 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
           } else if (state is GetTasksSuccessState) {
             hideLoading();
             tasksList = state.tasksList;
-            for (var v in tasksList) {
-              print(v.task);
-              print(v.mainId);
-            }
             items = buildTasksTree(tasksList);
-            for (var v in items) {
-              print(v.task);
-              print(v.mainId);
-              print(v.children);
-            }
             // ------------------------------------------------------
           } else if (state is InsertTaskLoadingState) {
             showLoading();
@@ -110,6 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
           } else if (state is InsertTaskSuccessState) {
             hideLoading();
             _taskNameTextController.text = "";
+            FocusScope.of(context).unfocus();
             showAppSnackBar(context, AppStrings.success);
             // ------------------------------------------------------
           } else if (state is DeleteAllTasksLoadingState) {
@@ -123,6 +110,20 @@ class _MyHomePageState extends State<MyHomePage> {
             );
           } else if (state is DeleteAllTasksSuccessState) {
             hideLoading();
+            RateMeCubit.get(context).getAllTasks();
+            // ------------------------------------------------------
+          } else if (state is DeleteTaskLoadingState) {
+            showLoading();
+          } else if (state is DeleteTaskErrorState) {
+            hideLoading();
+            showAppSnackBar(
+              context,
+              state.errorMessage,
+              type: SnackBarType.error,
+            );
+          } else if (state is DeleteTaskSuccessState) {
+            hideLoading();
+            items.removeWhere((task) => task.taskId == selectedTaskToDelete);
             RateMeCubit.get(context).getAllTasks();
             // ------------------------------------------------------
           } else if (state is ResetAllTasksLoadingState) {
@@ -168,16 +169,19 @@ class _MyHomePageState extends State<MyHomePage> {
                     icon: Icons.home_filled,
                     index: 0,
                     isActive: _currentIndex == 0,
+                    context: context
                   ),
                   _buildNavItem(
                     icon: Icons.add,
                     index: 1,
                     isActive: _currentIndex == 1,
+                      context: context
                   ),
                   _buildNavItem(
                     icon: Icons.notifications_active,
                     index: 2,
                     isActive: _currentIndex == 2,
+                      context: context
                   ),
                 ],
               ),
@@ -192,11 +196,20 @@ class _MyHomePageState extends State<MyHomePage> {
     required IconData icon,
     required int index,
     required bool isActive,
+    required BuildContext context
   }) {
     return GestureDetector(
       onTap: () {
         setState(() {
           _currentIndex = index;
+          
+          if (index == 1) {
+            subTask = false;
+            _taskNameTextController.text = "";
+            selectedTask = null;
+          }
+          
+          RateMeCubit.get(context).getAllTasks();
         });
       },
       child: Container(
@@ -265,9 +278,11 @@ class _MyHomePageState extends State<MyHomePage> {
               return CollapsibleItem(
                 item: items[index],
                 onDelete: () {
-                  setState(() {
-                    items.removeAt(index);
-                  });
+                  // setState(() {
+                  //   items.removeAt(index);
+                  // });
+                  selectedTaskToDelete = items[index].taskId;
+                  RateMeCubit.get(context).deleteTask(items[index].taskId);
                 },
               );
             },
@@ -314,7 +329,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                       hint: Text(
-                        AppStrings.taskName,
+                        AppStrings.mainTaskName,
                         style: TextStyle(
                           color: AppColors.cPrimary,
                           fontSize: 20.sp,
@@ -370,9 +385,15 @@ class _MyHomePageState extends State<MyHomePage> {
               if (_taskNameTextController.text.trim().isEmpty) {
                 return;
               }
+              if (subTask && selectedTask == null) {
+                setState(() {
+                  subTask = false;
+                });
+                return;
+              }
               var uuid = Uuid();
               String id = uuid.v4();
-              if (subTask) {
+              if (subTask && selectedTask != null) {
                 TaskModel taskModel = TaskModel(
                   taskId: id,
                   mainId: mainTaskId!,
