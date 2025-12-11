@@ -30,6 +30,16 @@ class DbHelper {
   Future<void> insertTask(TaskModel taskModel) async {
     final db = _db!.database;
 
+    final existing = await db.query(
+      'rate_me',
+      where: 'task_name = ?',
+      whereArgs: [taskModel.task],
+    );
+
+    if (existing.isNotEmpty) {
+      return;
+    }
+
     await db.insert('rate_me', taskModel.toJson());
   }
 

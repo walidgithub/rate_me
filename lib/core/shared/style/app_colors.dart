@@ -11,10 +11,16 @@ class AppColors {
   static const Color cDark = Color(0xFF000000);
   // --- pregress and star color
   static const Color cProgressLevel1 = Color(0xF4DA0909);
-  static const Color cProgressLevel2 = Color(0xF4E36904);
-  static const Color cProgressLevel3 = Color(0xF4FFFA05);
-  static const Color cProgressLevel4 = Color(0xF484C41C);
-  static const Color cProgressLevel5 = Color(0xF413CEBB);
+  static const Color cProgressLevel2 = Color(0xF4D94A4A);
+  static const Color cProgressLevel3 = Color(0xF4E36904);
+  static const Color cProgressLevel4 = Color(0xF4D79157);
+  static const Color cProgressLevel5 = Color(0xF4FFFA05);
+  static const Color cProgressLevel6 = Color(0xF4D5D362);
+  static const Color cProgressLevel7 = Color(0xF484C41C);
+  static const Color cProgressLevel8 = Color(0xF4A3C56C);
+  static const Color cProgressLevel9 = Color(0xF473C0B9);
+  static const Color cProgressLevel10 = Color(0xF413CEBB);
+
   // --- task level color
   static const Color cLevel1 = Color(0xFF4A6CF7);
   static const Color cLevel2 = Color(0xFF7D8FFF);

@@ -5,6 +5,7 @@ class AppStrings {
   static const String subTask = "مهمة فرعية";
   static const String taskName = "اسم المهمة";
   static const String mainTaskName = "اسم المهمة الأساسية";
+  static const String subTaskName = "اسم المهمة الفرعية";
   static const String save = "حفظ";
   static const String start = "ابدأ";
   static const String minute = "دقيقة";
