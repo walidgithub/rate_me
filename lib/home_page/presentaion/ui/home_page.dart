@@ -55,9 +55,10 @@ class _MyHomePageState extends State<MyHomePage> {
         mainId: task.mainId,
         task: task.task,
         rateValue: task.rateValue,
-        children: childrenMap[task.taskId]
-            ?.map((child) => buildNode(child))
-            .toList() ??
+        children:
+            childrenMap[task.taskId]
+                ?.map((child) => buildNode(child))
+                .toList() ??
             [],
       );
     }
@@ -85,7 +86,9 @@ class _MyHomePageState extends State<MyHomePage> {
           } else if (state is GetTasksSuccessState) {
             hideLoading();
             tasksList = state.tasksList;
-            tasksMenuList = state.tasksList.where((task) => task.mainId == "").toList();
+            tasksMenuList = state.tasksList
+                .where((task) => task.mainId == "")
+                .toList();
             items = buildTasksTree(tasksList);
             // ------------------------------------------------------
           } else if (state is InsertTaskLoadingState) {
@@ -173,19 +176,19 @@ class _MyHomePageState extends State<MyHomePage> {
                     icon: Icons.home_filled,
                     index: 0,
                     isActive: _currentIndex == 0,
-                    context: context
+                    context: context,
                   ),
                   _buildNavItem(
                     icon: Icons.add,
                     index: 1,
                     isActive: _currentIndex == 1,
-                      context: context
+                    context: context,
                   ),
                   _buildNavItem(
                     icon: Icons.notifications_active,
                     index: 2,
                     isActive: _currentIndex == 2,
-                      context: context
+                    context: context,
                   ),
                 ],
               ),
@@ -200,21 +203,21 @@ class _MyHomePageState extends State<MyHomePage> {
     required IconData icon,
     required int index,
     required bool isActive,
-    required BuildContext context
+    required BuildContext context,
   }) {
     return GestureDetector(
       onTap: () {
         setState(() {
           _currentIndex = index;
-          
+
           if (index == 1) {
             subTask = false;
             subSubTask = false;
             _taskNameTextController.text = "";
             selectedTask = null;
-            selectedSubTaskName= null;
+            selectedSubTaskName = null;
           }
-          
+
           RateMeCubit.get(context).getAllTasks();
         });
       },
@@ -357,22 +360,23 @@ class _MyHomePageState extends State<MyHomePage> {
                         setStateDropdown(() {
                           selectedTask = value;
 
-                          // 1) get the selected task model
-                          final selectedModel =
-                          tasksMenuList.firstWhere((task) => task.task == value);
+                          mainTaskId = tasksMenuList
+                              .firstWhere((task) => task.task == value)
+                              .taskId;
 
-                          // 2) get its taskId
-                          final selectedTaskId = selectedModel.taskId;
-
-                          // 3) filter by task.mainId == selected taskId
-                          subTasksList = tasksMenuList
-                              .where((task) => task.mainId == selectedTaskId)
+                          subTasksList = tasksList
+                              .where((task) => task.mainId == mainTaskId)
                               .toList();
 
-                          // 4) toggle subSubTask
-                          setState(() {
-                            subSubTask = subTasksList.isNotEmpty;
-                          });
+                          if (subTasksList.isNotEmpty) {
+                            setState(() {
+                              subSubTask = true;
+                            });
+                          } else {
+                            setState(() {
+                              subSubTask = false;
+                            });
+                          }
                         });
                       },
                     );
@@ -384,48 +388,48 @@ class _MyHomePageState extends State<MyHomePage> {
 
           subSubTask
               ? StatefulBuilder(
-            builder: (context, setStateDropdown) {
-              return DropdownButtonFormField<String>(
-                dropdownColor: AppColors.cSurface,
-                initialValue: selectedSubTaskName,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
-                    borderSide: BorderSide(color: AppColors.cPrimary),
-                  ),
-                ),
-                hint: Text(
-                  AppStrings.subTaskName,
-                  style: TextStyle(
-                    color: AppColors.cPrimary,
-                    fontSize: 20.sp,
-                  ),
-                ),
-                icon: const Icon(
-                  Icons.arrow_drop_down,
-                  color: AppColors.cPrimary,
-                ),
-                style: TextStyle(
-                  color: AppColors.cPrimary,
-                  fontSize: 20.sp,
-                ),
-                items: subTasksList.map((task) {
-                  return DropdownMenuItem(
-                    value: task.task, // ✔ dropdown value
-                    child: Text(task.task), // ✔ dropdown display text
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setStateDropdown(() {
-                    selectedSubTaskName = value;
-                    subTaskId = subTasksList.firstWhere((task) {
-                      return task.task == value;
-                    }).taskId;
-                  });
-                },
-              );
-            },
-          )
+                  builder: (context, setStateDropdown) {
+                    return DropdownButtonFormField<String>(
+                      dropdownColor: AppColors.cSurface,
+                      initialValue: selectedSubTaskName,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                          borderSide: BorderSide(color: AppColors.cPrimary),
+                        ),
+                      ),
+                      hint: Text(
+                        AppStrings.subTaskName,
+                        style: TextStyle(
+                          color: AppColors.cPrimary,
+                          fontSize: 20.sp,
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.arrow_drop_down,
+                        color: AppColors.cPrimary,
+                      ),
+                      style: TextStyle(
+                        color: AppColors.cPrimary,
+                        fontSize: 20.sp,
+                      ),
+                      items: subTasksList.map((task) {
+                        return DropdownMenuItem(
+                          value: task.task, // ✔ dropdown value
+                          child: Text(task.task), // ✔ dropdown display text
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setStateDropdown(() {
+                          selectedSubTaskName = value;
+                          subTaskId = subTasksList.firstWhere((task) {
+                            return task.task == value;
+                          }).taskId;
+                        });
+                      },
+                    );
+                  },
+                )
               : SizedBox.shrink(),
 
           subSubTask ? SizedBox(height: 20.h) : SizedBox.shrink(),
@@ -449,9 +453,10 @@ class _MyHomePageState extends State<MyHomePage> {
           Bounceable(
             onTap: () {
               _taskNameTextController.text =
-                  _taskNameTextController.text +
-                      (selectedTask != null ? " ${selectedTask!}" : "") +
-                      (selectedSubTaskName != null ? " ${selectedSubTaskName!}" : "");
+                  (selectedTask != null ? "${_taskNameTextController.text} ${selectedTask!}" : "") +
+                  (selectedSubTaskName != null
+                      ? "${_taskNameTextController.text} ${selectedSubTaskName!}"
+                      : "");
 
               if (_taskNameTextController.text.trim().isEmpty) {
                 return;
@@ -467,7 +472,7 @@ class _MyHomePageState extends State<MyHomePage> {
               if (subTask && selectedTask != null) {
                 TaskModel taskModel = TaskModel(
                   taskId: id,
-                  mainId: mainTaskId!,
+                  mainId: subSubTask ? subTaskId! : mainTaskId!,
                   task: _taskNameTextController.text,
                   rateValue: 0,
                 );
@@ -587,9 +592,7 @@ class _MyHomePageState extends State<MyHomePage> {
           SizedBox(height: 20.h),
 
           Bounceable(
-            onTap: () {
-
-            },
+            onTap: () {},
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20.r),
               child: BackdropFilter(
