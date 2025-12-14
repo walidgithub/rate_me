@@ -25,7 +25,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
   bool subTask = false;
-  bool subSubTask = false;
+  bool showSubTaskCheck = false;
+  bool subTaskCheck = false;
 
   final TextEditingController _taskNameTextController = TextEditingController();
   String? selectedTask;
@@ -212,10 +213,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
           if (index == 1) {
             subTask = false;
-            subSubTask = false;
+            showSubTaskCheck = false;
+            subTaskCheck = false;
             _taskNameTextController.text = "";
             selectedTask = null;
             selectedSubTaskName = null;
+            mainTaskId = null;
+            subTaskId = null;
           }
 
           RateMeCubit.get(context).getAllTasks();
@@ -311,7 +315,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 onChanged: (value) {
                   setState(() {
                     subTask = value!;
-                    subSubTask = false;
+                    showSubTaskCheck = false;
+                    subTaskCheck = false;
+                    subTaskId = null;
                   });
                   RateMeCubit.get(context).getAllTasks();
                 },
@@ -370,11 +376,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
                           if (subTasksList.isNotEmpty) {
                             setState(() {
-                              subSubTask = true;
+                              subTaskCheck = true;
                             });
                           } else {
                             setState(() {
-                              subSubTask = false;
+                              subTaskCheck = false;
+                              subTaskId = null;
                             });
                           }
                         });
@@ -384,9 +391,30 @@ class _MyHomePageState extends State<MyHomePage> {
                 )
               : SizedBox.shrink(),
 
-          subTask ? SizedBox(height: 20.h) : SizedBox.shrink(),
+          subTask ? SizedBox(height: 10.h) : SizedBox.shrink(),
 
-          subSubTask
+          subTaskCheck ?
+          Row(
+            children: [
+              Checkbox(
+                value: showSubTaskCheck,
+                activeColor: Colors.orangeAccent,
+                onChanged: (value) {
+                  setState(() {
+                    showSubTaskCheck = value!;
+                    subTaskId = null;
+                  });
+                  RateMeCubit.get(context).getAllTasks();
+                },
+              ),
+              Text(
+                AppStrings.subTask,
+                style: TextStyle(color: AppColors.cPrimary, fontSize: 20.sp),
+              ),
+            ],
+          ) : SizedBox.shrink(),
+
+          showSubTaskCheck
               ? StatefulBuilder(
                   builder: (context, setStateDropdown) {
                     return DropdownButtonFormField<String>(
@@ -432,7 +460,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 )
               : SizedBox.shrink(),
 
-          subSubTask ? SizedBox(height: 20.h) : SizedBox.shrink(),
+          showSubTaskCheck ? SizedBox(height: 20.h) : SizedBox.shrink(),
 
           TextField(
             controller: _taskNameTextController,
@@ -452,27 +480,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
           Bounceable(
             onTap: () {
-              _taskNameTextController.text =
-                  (selectedTask != null ? "${_taskNameTextController.text} ${selectedTask!}" : "") +
-                  (selectedSubTaskName != null
-                      ? "${_taskNameTextController.text} ${selectedSubTaskName!}"
-                      : "");
+              if (mainTaskId != null && subTaskId == null) {
+                _taskNameTextController.text = "${_taskNameTextController.text} ${selectedTask!}";
+              } else if (mainTaskId != null && subTaskId != null) {
+                _taskNameTextController.text = "${_taskNameTextController.text} ${selectedSubTaskName!}";
+              }
 
               if (_taskNameTextController.text.trim().isEmpty) {
                 return;
               }
-              if (subTask && selectedTask == null) {
-                setState(() {
-                  subTask = false;
-                });
-                return;
-              }
+
               var uuid = Uuid();
               String id = uuid.v4();
-              if (subTask && selectedTask != null) {
+              if (subTask && mainTaskId != null) {
                 TaskModel taskModel = TaskModel(
                   taskId: id,
-                  mainId: subSubTask ? subTaskId! : mainTaskId!,
+                  mainId: showSubTaskCheck && subTaskId != null ? subTaskId! : mainTaskId!,
                   task: _taskNameTextController.text,
                   rateValue: 0,
                 );
