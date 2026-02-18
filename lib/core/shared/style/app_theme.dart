@@ -23,7 +23,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         contentPadding: EdgeInsets.symmetric(
           horizontal: 10.h,
-          vertical: 5.h,
+          vertical: 10.h,
         ),
         enabledBorder: OutlineInputBorder(
           borderSide: const BorderSide(color: AppColors.cAccent),
@@ -47,7 +47,7 @@ class AppTheme {
           inputDecorationTheme: InputDecorationTheme(
             contentPadding: EdgeInsets.symmetric(
               horizontal: 10.h,
-              vertical: 5.h,
+              vertical: 10.h,
             ),
             enabledBorder: OutlineInputBorder(
               borderSide: const BorderSide(color: AppColors.cAccent),

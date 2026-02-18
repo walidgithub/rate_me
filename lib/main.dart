@@ -4,6 +4,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/di/di.dart';
 import 'core/router/app_router.dart';
+import 'core/services/background_vibration_service.dart';
 import 'core/shared/constant/app_strings.dart';
 import 'core/shared/style/app_theme.dart';
 
@@ -12,6 +13,7 @@ void main() async {
 
   await ServiceLocator().init();
   await ScreenUtil.ensureScreenSize();
+  await initializeVibrationService();
 
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
 

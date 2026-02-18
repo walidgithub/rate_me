@@ -15,6 +15,7 @@ import '../../../core/utils/loading_dialog.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../data/model/home_tasks_Model.dart';
 import '../../data/model/task_model.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -22,11 +23,13 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   int _currentIndex = 0;
   bool subTask = false;
   bool showSubTaskCheck = false;
   bool subTaskCheck = false;
+  late AnimationController _fabAnimationController;
+  late Animation<double> _fabAnimation;
 
   final TextEditingController _taskNameTextController = TextEditingController();
   String? selectedTask;
@@ -36,11 +39,32 @@ class _MyHomePageState extends State<MyHomePage> {
   String? subTaskId;
   int count = 1;
   int min = 1;
-  int max = 15;
+  int max = 300;
   List<HomeTasksModel> items = [];
   List<TaskModel> tasksList = [];
   List<TaskModel> tasksMenuList = [];
   List<TaskModel> subTasksList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fabAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fabAnimation = CurvedAnimation(
+      parent: _fabAnimationController,
+      curve: Curves.easeInOut,
+    );
+    _fabAnimationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fabAnimationController.dispose();
+    _taskNameTextController.dispose();
+    super.dispose();
+  }
 
   List<HomeTasksModel> buildTasksTree(List<TaskModel> tasks) {
     final Map<String, List<TaskModel>> childrenMap = {};
@@ -57,15 +81,12 @@ class _MyHomePageState extends State<MyHomePage> {
         task: task.task,
         rateValue: task.rateValue,
         children:
-            childrenMap[task.taskId]
-                ?.map((child) => buildNode(child))
-                .toList() ??
+        childrenMap[task.taskId]?.map((child) => buildNode(child)).toList() ??
             [],
       );
     }
 
     final roots = tasks.where((t) => t.mainId.isEmpty);
-
     return roots.map(buildNode).toList();
   }
 
@@ -79,70 +100,44 @@ class _MyHomePageState extends State<MyHomePage> {
             showLoading();
           } else if (state is GetTasksErrorState) {
             hideLoading();
-            showAppSnackBar(
-              context,
-              state.errorMessage,
-              type: SnackBarType.error,
-            );
+            showAppSnackBar(context, state.errorMessage, type: SnackBarType.error);
           } else if (state is GetTasksSuccessState) {
             hideLoading();
             tasksList = state.tasksList;
-            tasksMenuList = state.tasksList
-                .where((task) => task.mainId == "")
-                .toList();
+            tasksMenuList = state.tasksList.where((task) => task.mainId == "").toList();
             items = buildTasksTree(tasksList);
-            // ------------------------------------------------------
           } else if (state is InsertTaskLoadingState) {
             showLoading();
           } else if (state is InsertTaskErrorState) {
             hideLoading();
-            showAppSnackBar(
-              context,
-              state.errorMessage,
-              type: SnackBarType.error,
-            );
+            showAppSnackBar(context, state.errorMessage, type: SnackBarType.error);
           } else if (state is InsertTaskSuccessState) {
             hideLoading();
             _taskNameTextController.text = "";
             FocusScope.of(context).unfocus();
             showAppSnackBar(context, AppStrings.success);
-            // ------------------------------------------------------
           } else if (state is DeleteAllTasksLoadingState) {
             showLoading();
           } else if (state is DeleteAllTasksErrorState) {
             hideLoading();
-            showAppSnackBar(
-              context,
-              state.errorMessage,
-              type: SnackBarType.error,
-            );
+            showAppSnackBar(context, state.errorMessage, type: SnackBarType.error);
           } else if (state is DeleteAllTasksSuccessState) {
             hideLoading();
             RateMeCubit.get(context).getAllTasks();
-            // ------------------------------------------------------
           } else if (state is DeleteTaskLoadingState) {
             showLoading();
           } else if (state is DeleteTaskErrorState) {
             hideLoading();
-            showAppSnackBar(
-              context,
-              state.errorMessage,
-              type: SnackBarType.error,
-            );
+            showAppSnackBar(context, state.errorMessage, type: SnackBarType.error);
           } else if (state is DeleteTaskSuccessState) {
             hideLoading();
             items.removeWhere((task) => task.taskId == selectedTaskToDelete);
             RateMeCubit.get(context).getAllTasks();
-            // ------------------------------------------------------
           } else if (state is ResetAllTasksLoadingState) {
             showLoading();
           } else if (state is ResetAllTasksErrorState) {
             hideLoading();
-            showAppSnackBar(
-              context,
-              state.errorMessage,
-              type: SnackBarType.error,
-            );
+            showAppSnackBar(context, state.errorMessage, type: SnackBarType.error);
           } else if (state is ResetAllTasksSuccessState) {
             hideLoading();
             RateMeCubit.get(context).getAllTasks();
@@ -150,58 +145,143 @@ class _MyHomePageState extends State<MyHomePage> {
         },
         builder: (context, state) {
           return Scaffold(
+            backgroundColor: AppColors.cSurface,
             body: SafeArea(
               child: Directionality(
                 textDirection: TextDirection.rtl,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Modern Header
+                    _buildModernHeader(),
+
                     Expanded(
-                      child: _currentIndex == 0
-                          ? _buildHomePage(context)
-                          : _currentIndex == 1
-                          ? _buildAddTask(context)
-                          : _buildAddAlert(context),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.1, 0),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _currentIndex == 0
+                            ? _buildHomePage(context)
+                            : _currentIndex == 1
+                            ? _buildAddTask(context)
+                            : _buildAddAlert(context),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            bottomNavigationBar: Container(
-              margin: EdgeInsets.all(10.w),
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildNavItem(
-                    icon: Icons.home_filled,
-                    index: 0,
-                    isActive: _currentIndex == 0,
-                    context: context,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.add,
-                    index: 1,
-                    isActive: _currentIndex == 1,
-                    context: context,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.notifications_active,
-                    index: 2,
-                    isActive: _currentIndex == 2,
-                    context: context,
-                  ),
-                ],
-              ),
-            ),
+            bottomNavigationBar: _buildModernBottomNav(context),
           );
         },
       ),
     );
   }
 
-  Widget _buildNavItem({
+  Widget _buildModernHeader() {
+    final titles = ['المهام', 'إضافة مهمة', 'التنبيهات'];
+    final icons = [Icons.assignment_rounded, Icons.add_circle_rounded, Icons.alarm_rounded];
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.cPrimary, AppColors.cPrimary.withOpacity(0.8)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cPrimary.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(
+              icons[_currentIndex],
+              color: Colors.white,
+              size: 28.sp,
+            ),
+          ),
+          SizedBox(width: 15.w),
+          Text(
+            titles[_currentIndex],
+            style: GoogleFonts.cairo(
+              color: Colors.white,
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernBottomNav(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.all(15.w),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildModernNavItem(
+            icon: Icons.dashboard_rounded,
+            label: 'الرئيسية',
+            index: 0,
+            isActive: _currentIndex == 0,
+            context: context,
+          ),
+          _buildModernNavItem(
+            icon: Icons.add_box_rounded,
+            label: 'إضافة',
+            index: 1,
+            isActive: _currentIndex == 1,
+            context: context,
+          ),
+          _buildModernNavItem(
+            icon: Icons.alarm_on_rounded,
+            label: 'تنبيهات',
+            index: 2,
+            isActive: _currentIndex == 2,
+            context: context,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernNavItem({
     required IconData icon,
+    required String label,
     required int index,
     required bool isActive,
     required BuildContext context,
@@ -210,7 +290,6 @@ class _MyHomePageState extends State<MyHomePage> {
       onTap: () {
         setState(() {
           _currentIndex = index;
-
           if (index == 1) {
             subTask = false;
             showSubTaskCheck = false;
@@ -221,21 +300,36 @@ class _MyHomePageState extends State<MyHomePage> {
             mainTaskId = null;
             subTaskId = null;
           }
-
           RateMeCubit.get(context).getAllTasks();
         });
       },
-      child: Container(
-        padding: EdgeInsets.all(10.w),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.cPrimary : AppColors.cSurface,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.cPrimary),
+          color: isActive ? AppColors.cPrimary.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(15.r),
         ),
-        child: Icon(
-          icon,
-          color: isActive ? AppColors.cSurface : AppColors.cPrimary,
-          size: 18.sp,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isActive ? AppColors.cPrimary : Colors.grey,
+              size: 26.sp,
+            ),
+            if (isActive) ...[
+              SizedBox(height: 4.h),
+              Text(
+                label,
+                style: GoogleFonts.cairo(
+                  color: AppColors.cPrimary,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -244,56 +338,64 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildHomePage(BuildContext context) {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            IconButton(
-              icon: Icon(Icons.delete, color: AppColors.cError),
-              onPressed: () {
-                RateMeCubit.get(context).deleteAllTasks();
-              },
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.loop, color: AppColors.cPrimary),
-                  onPressed: () {
-                    RateMeCubit.get(context).resetAllTasks();
-                  },
-                ),
-                Text(
-                  AppStrings.reset,
-                  style: TextStyle(color: AppColors.cPrimary, fontSize: 15.sp),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.refresh, color: AppColors.cPrimary),
-                  onPressed: () {
-                    RateMeCubit.get(context).getAllTasks();
-                  },
-                ),
-                Text(
-                  AppStrings.reload,
-                  style: TextStyle(color: AppColors.cPrimary, fontSize: 15.sp),
-                ),
-              ],
-            ),
-          ],
+        // Action Buttons
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+          padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildActionButton(
+                icon: Icons.sync_rounded,
+                label: AppStrings.reload,
+                color: AppColors.cPrimary,
+                onTap: () => RateMeCubit.get(context).getAllTasks(),
+              ),
+              _buildActionButton(
+                icon: Icons.restart_alt_rounded,
+                label: AppStrings.reset,
+                color: Colors.orange,
+                onTap: () => RateMeCubit.get(context).resetAllTasks(),
+              ),
+              _buildActionButton(
+                icon: Icons.delete_sweep_rounded,
+                label: 'حذف الكل',
+                color: AppColors.cError,
+                onTap: () => _showDeleteAllDialog(context),
+              ),
+            ],
+          ),
         ),
+
+        // Tasks List
         Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.all(16.w),
+          child: items.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
             itemCount: items.length,
             itemBuilder: (context, index) {
-              return CollapsibleItem(
-                item: items[index],
-                onDelete: () {
-                  selectedTaskToDelete = items[index].taskId;
-                  RateMeCubit.get(context).deleteTask(items[index].taskId);
-                },
+              return AnimatedOpacity(
+                duration: Duration(milliseconds: 300 + (index * 100)),
+                opacity: 1.0,
+                child: CollapsibleItem(
+                  item: items[index],
+                  onDelete: () {
+                    selectedTaskToDelete = items[index].taskId;
+                    RateMeCubit.get(context).deleteTask(items[index].taskId);
+                  },
+                ),
               );
             },
           ),
@@ -302,241 +404,31 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildAddTask(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(15.w),
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Bounceable(
+      onTap: onTap,
       child: Column(
         children: [
-          Row(
-            children: [
-              Checkbox(
-                value: subTask,
-                activeColor: Colors.orangeAccent,
-                onChanged: (value) {
-                  setState(() {
-                    subTask = value!;
-                    showSubTaskCheck = false;
-                    subTaskCheck = false;
-                    subTaskId = null;
-                  });
-                  RateMeCubit.get(context).getAllTasks();
-                },
-              ),
-              Text(
-                AppStrings.subTask,
-                style: TextStyle(color: AppColors.cPrimary, fontSize: 20.sp),
-              ),
-            ],
-          ),
-
-          subTask
-              ? StatefulBuilder(
-                  builder: (context, setStateDropdown) {
-                    return DropdownButtonFormField<String>(
-                      dropdownColor: AppColors.cSurface,
-                      initialValue: selectedTask,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10.r),
-                          borderSide: BorderSide(color: AppColors.cPrimary),
-                        ),
-                      ),
-                      hint: Text(
-                        AppStrings.mainTaskName,
-                        style: TextStyle(
-                          color: AppColors.cPrimary,
-                          fontSize: 20.sp,
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.arrow_drop_down,
-                        color: AppColors.cPrimary,
-                      ),
-                      style: TextStyle(
-                        color: AppColors.cPrimary,
-                        fontSize: 20.sp,
-                      ),
-                      items: tasksMenuList.map((task) {
-                        return DropdownMenuItem(
-                          value: task.task, // ✔ dropdown value
-                          child: Text(task.task), // ✔ dropdown display text
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setStateDropdown(() {
-                          selectedTask = value;
-
-                          mainTaskId = tasksMenuList
-                              .firstWhere((task) => task.task == value)
-                              .taskId;
-
-                          subTasksList = tasksList
-                              .where((task) => task.mainId == mainTaskId)
-                              .toList();
-
-                          if (subTasksList.isNotEmpty) {
-                            setState(() {
-                              subTaskCheck = true;
-                            });
-                          } else {
-                            setState(() {
-                              subTaskCheck = false;
-                              subTaskId = null;
-                            });
-                          }
-                        });
-                      },
-                    );
-                  },
-                )
-              : SizedBox.shrink(),
-
-          subTask ? SizedBox(height: 10.h) : SizedBox.shrink(),
-
-          subTaskCheck ?
-          Row(
-            children: [
-              Checkbox(
-                value: showSubTaskCheck,
-                activeColor: Colors.orangeAccent,
-                onChanged: (value) {
-                  setState(() {
-                    showSubTaskCheck = value!;
-                    subTaskId = null;
-                  });
-                  RateMeCubit.get(context).getAllTasks();
-                },
-              ),
-              Text(
-                AppStrings.subTask,
-                style: TextStyle(color: AppColors.cPrimary, fontSize: 20.sp),
-              ),
-            ],
-          ) : SizedBox.shrink(),
-
-          showSubTaskCheck
-              ? StatefulBuilder(
-                  builder: (context, setStateDropdown) {
-                    return DropdownButtonFormField<String>(
-                      dropdownColor: AppColors.cSurface,
-                      initialValue: selectedSubTaskName,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10.r),
-                          borderSide: BorderSide(color: AppColors.cPrimary),
-                        ),
-                      ),
-                      hint: Text(
-                        AppStrings.subTaskName,
-                        style: TextStyle(
-                          color: AppColors.cPrimary,
-                          fontSize: 20.sp,
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.arrow_drop_down,
-                        color: AppColors.cPrimary,
-                      ),
-                      style: TextStyle(
-                        color: AppColors.cPrimary,
-                        fontSize: 20.sp,
-                      ),
-                      items: subTasksList.map((task) {
-                        return DropdownMenuItem(
-                          value: task.task, // ✔ dropdown value
-                          child: Text(task.task), // ✔ dropdown display text
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setStateDropdown(() {
-                          selectedSubTaskName = value;
-                          subTaskId = subTasksList.firstWhere((task) {
-                            return task.task == value;
-                          }).taskId;
-                        });
-                      },
-                    );
-                  },
-                )
-              : SizedBox.shrink(),
-
-          showSubTaskCheck ? SizedBox(height: 20.h) : SizedBox.shrink(),
-
-          TextField(
-            controller: _taskNameTextController,
-            keyboardType: TextInputType.text,
-            style: TextStyle(color: AppColors.cPrimary, fontSize: 20.sp),
-            decoration: InputDecoration(
-              hintText: AppStrings.taskName,
-              hintStyle: TextStyle(color: AppColors.cPrimary),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10.r),
-                borderSide: BorderSide(color: AppColors.cPrimary),
-              ),
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12.r),
             ),
+            child: Icon(icon, color: color, size: 22.sp),
           ),
-
-          SizedBox(height: 20.h),
-
-          Bounceable(
-            onTap: () {
-              if (mainTaskId != null && subTaskId == null) {
-                _taskNameTextController.text = "${_taskNameTextController.text} ${selectedTask!}";
-              } else if (mainTaskId != null && subTaskId != null) {
-                _taskNameTextController.text = "${_taskNameTextController.text} ${selectedSubTaskName!}";
-              }
-
-              if (_taskNameTextController.text.trim().isEmpty) {
-                return;
-              }
-
-              var uuid = Uuid();
-              String id = uuid.v4();
-              if (subTask && mainTaskId != null) {
-                TaskModel taskModel = TaskModel(
-                  taskId: id,
-                  mainId: showSubTaskCheck && subTaskId != null ? subTaskId! : mainTaskId!,
-                  task: _taskNameTextController.text,
-                  rateValue: 0,
-                );
-                RateMeCubit.get(context).insertTask(taskModel);
-              } else {
-                TaskModel taskModel = TaskModel(
-                  taskId: id,
-                  mainId: "",
-                  task: _taskNameTextController.text,
-                  rateValue: 0,
-                );
-                RateMeCubit.get(context).insertTask(taskModel);
-              }
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20.r),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10.h, sigmaY: 10.w),
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 10.w),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 10.w,
-                    vertical: 10.h,
-                  ),
-                  width: 120.w,
-                  height: 45.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.cPrimary,
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Center(
-                    child: Text(
-                      AppStrings.save,
-                      style: GoogleFonts.poppins(
-                        color: AppColors.cSurface,
-                        fontSize: 20.sp,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+          SizedBox(height: 5.h),
+          Text(
+            label,
+            style: GoogleFonts.cairo(
+              color: color,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -544,104 +436,535 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildAddAlert(BuildContext context) {
-    return Padding(
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.checklist_rounded,
+            size: 100.sp,
+            color: Colors.grey.withOpacity(0.3),
+          ),
+          SizedBox(height: 20.h),
+          Text(
+            'لا توجد مهام',
+            style: GoogleFonts.cairo(
+              fontSize: 22.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            'ابدأ بإضافة مهمة جديدة',
+            style: GoogleFonts.cairo(
+              fontSize: 16.sp,
+              color: Colors.grey.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAllDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Text(
+          'تأكيد الحذف',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'هل أنت متأكد من حذف جميع المهام؟',
+          style: GoogleFonts.cairo(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('إلغاء', style: GoogleFonts.cairo()),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              RateMeCubit.get(context).deleteAllTasks();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.cError,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            child: Text('حذف', style: GoogleFonts.cairo(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddTask(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(20.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sub Task Toggle
+          _buildModernCheckbox(
+            value: subTask,
+            label: AppStrings.subTask,
+            onChanged: (value) {
+              setState(() {
+                subTask = value!;
+                showSubTaskCheck = false;
+                subTaskCheck = false;
+                subTaskId = null;
+              });
+              RateMeCubit.get(context).getAllTasks();
+            },
+          ),
+
+          SizedBox(height: 20.h),
+
+          // Main Task Dropdown
+          if (subTask) ...[
+            _buildModernDropdown(
+              value: selectedTask,
+              hint: AppStrings.mainTaskName,
+              items: tasksMenuList.map((task) => task.task).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedTask = value;
+                  mainTaskId = tasksMenuList.firstWhere((task) => task.task == value).taskId;
+                  subTasksList = tasksList.where((task) => task.mainId == mainTaskId).toList();
+                  subTaskCheck = subTasksList.isNotEmpty;
+                  if (!subTaskCheck) subTaskId = null;
+                });
+              },
+            ),
+            SizedBox(height: 20.h),
+          ],
+
+          // Sub-Sub Task Toggle
+          if (subTaskCheck) ...[
+            _buildModernCheckbox(
+              value: showSubTaskCheck,
+              label: AppStrings.subTask,
+              onChanged: (value) {
+                setState(() {
+                  showSubTaskCheck = value!;
+                  subTaskId = null;
+                });
+                RateMeCubit.get(context).getAllTasks();
+              },
+            ),
+            SizedBox(height: 20.h),
+          ],
+
+          // Sub Task Dropdown
+          if (showSubTaskCheck) ...[
+            _buildModernDropdown(
+              value: selectedSubTaskName,
+              hint: AppStrings.subSubTaskName,
+              items: subTasksList.map((task) => task.task).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedSubTaskName = value;
+                  subTaskId = subTasksList.firstWhere((task) => task.task == value).taskId;
+                });
+              },
+            ),
+            SizedBox(height: 20.h),
+          ],
+
+          // Task Name Input
+          _buildModernTextField(
+            controller: _taskNameTextController,
+            hint: AppStrings.taskName,
+            icon: Icons.label_rounded,
+          ),
+
+          SizedBox(height: 30.h),
+
+          // Save Button
+          Center(
+            child: _buildModernButton(
+              label: AppStrings.save,
+              icon: Icons.done_rounded,
+              onTap: () => _saveTask(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernCheckbox({
+    required bool value,
+    required String label,
+    required Function(bool?) onChanged,
+  }) {
+    return Container(
       padding: EdgeInsets.all(15.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(
+          color: value ? AppColors.cPrimary : Colors.grey.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Checkbox(
+            value: value,
+            activeColor: AppColors.cPrimary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5.r)),
+            onChanged: onChanged,
+          ),
+          SizedBox(width: 10.w),
+          Text(
+            label,
+            style: GoogleFonts.cairo(
+              color: AppColors.cPrimary,
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernDropdown({
+    required String? value,
+    required String hint,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: AppColors.cPrimary.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        dropdownColor: Colors.white,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 8.h),
+          isDense: false,
+        ),
+        hint: Text(
+          hint,
+          style: GoogleFonts.cairo(
+            color: Colors.grey,
+            fontSize: 16.sp,
+          ),
+        ),
+        icon: Icon(Icons.keyboard_arrow_down, color: AppColors.cPrimary, size: 28.sp),
+        selectedItemBuilder: (BuildContext context) {
+          return items.map((String item) {
+            return Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                item,
+                style: GoogleFonts.cairo(
+                  color: AppColors.cPrimary,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
+                ),
+              ),
+            );
+          }).toList();
+        },
+        style: GoogleFonts.cairo(
+          color: AppColors.cPrimary,
+          fontSize: 16.sp,
+          height: 1.5,
+        ),
+        isExpanded: true,
+        itemHeight: 60.h,
+        menuMaxHeight: 300.h,
+        items: items.map((item) {
+          return DropdownMenuItem(
+            value: item,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              child: Text(
+                item,
+                style: GoogleFonts.cairo(
+                  color: AppColors.cPrimary,
+                  fontSize: 16.sp,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 15.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: AppColors.cPrimary.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        style: GoogleFonts.cairo(
+          color: AppColors.cPrimary,
+          fontSize: 16.sp,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.cairo(color: Colors.grey),
+          border: InputBorder.none,
+          prefixIcon: Icon(icon, color: AppColors.cPrimary),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Bounceable(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 15.h),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.cPrimary, AppColors.cPrimary.withOpacity(0.8)],
+          ),
+          borderRadius: BorderRadius.circular(25.r),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.cPrimary.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 24.sp),
+            SizedBox(width: 10.w),
+            Text(
+              label,
+              style: GoogleFonts.cairo(
+                color: Colors.white,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveTask(BuildContext context) {
+    if (mainTaskId != null && subTaskId == null) {
+      _taskNameTextController.text = "${_taskNameTextController.text} $selectedTask";
+    } else if (mainTaskId != null && subTaskId != null) {
+      _taskNameTextController.text = "${_taskNameTextController.text} $selectedSubTaskName";
+    }
+
+    if (_taskNameTextController.text.trim().isEmpty) return;
+
+    var uuid = const Uuid();
+    String id = uuid.v4();
+
+    if (subTask && mainTaskId != null) {
+      TaskModel taskModel = TaskModel(
+        taskId: id,
+        mainId: showSubTaskCheck && subTaskId != null ? subTaskId! : mainTaskId!,
+        task: _taskNameTextController.text,
+        rateValue: 0,
+      );
+      RateMeCubit.get(context).insertTask(taskModel);
+    } else {
+      TaskModel taskModel = TaskModel(
+        taskId: id,
+        mainId: "",
+        task: _taskNameTextController.text,
+        rateValue: 0,
+      );
+      RateMeCubit.get(context).insertTask(taskModel);
+    }
+  }
+
+  Widget _buildAddAlert(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(20.w),
       child: Column(
         children: [
+          SizedBox(height: 20.h),
+
+          // Alert Icon
+          Container(
+            padding: EdgeInsets.all(30.w),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.cPrimary.withOpacity(0.1), AppColors.cPrimary.withOpacity(0.05)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.notifications_active_rounded,
+              size: 80.sp,
+              color: AppColors.cPrimary,
+            ),
+          ),
+
+          SizedBox(height: 30.h),
+
           Text(
             AppStrings.alert,
-            style: TextStyle(color: AppColors.cPrimary, fontSize: 20.sp),
+            style: GoogleFonts.cairo(
+              color: AppColors.cPrimary,
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+            ),
           ),
 
-          SizedBox(height: 20.h),
+          SizedBox(height: 40.h),
 
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey.shade200,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_left),
-                      onPressed: count > min
-                          ? () {
-                              setState(() {
-                                count = count - 1;
-                              });
-                            }
-                          : null,
-                    ),
-
-                    Text(
-                      "$count",
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    IconButton(
-                      icon: const Icon(Icons.arrow_right),
-                      onPressed: count < max
-                          ? () {
-                              setState(() {
-                                count = count + 1;
-                              });
-                            }
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(width: 10.w),
-
-              Text(
-                AppStrings.minute,
-                style: TextStyle(color: AppColors.cPrimary, fontSize: 20.sp),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 20.h),
-
-          Bounceable(
-            onTap: () {},
-            child: ClipRRect(
+          // Timer Selector
+          Container(
+            padding: EdgeInsets.all(20.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(20.r),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10.h, sigmaY: 10.w),
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 10.w),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 10.w,
-                    vertical: 10.h,
-                  ),
-                  width: 120.w,
-                  height: 45.h,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.remove_circle_outline, size: 35.sp),
+                  color: count > min ? AppColors.cPrimary : Colors.grey,
+                  onPressed: count > min
+                      ? () => setState(() => count--)
+                      : null,
+                ),
+                SizedBox(width: 20.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 15.h),
                   decoration: BoxDecoration(
-                    color: AppColors.cPrimary,
-                    borderRadius: BorderRadius.circular(20.r),
+                    color: AppColors.cPrimary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(15.r),
                   ),
-                  child: Center(
-                    child: Text(
-                      AppStrings.start,
-                      style: GoogleFonts.poppins(
-                        color: AppColors.cSurface,
-                        fontSize: 20.sp,
-                      ),
+                  child: Text(
+                    "$count",
+                    style: GoogleFonts.cairo(
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.cPrimary,
                     ),
                   ),
                 ),
+                SizedBox(width: 20.w),
+                IconButton(
+                  icon: Icon(Icons.add_circle_outline, size: 35.sp),
+                  color: count < max ? AppColors.cPrimary : Colors.grey,
+                  onPressed: count < max
+                      ? () => setState(() => count++)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 15.h),
+
+          Text(
+            AppStrings.second,
+            style: GoogleFonts.cairo(
+              color: Colors.grey,
+              fontSize: 18.sp,
+            ),
+          ),
+
+          SizedBox(height: 50.h),
+
+          // Start Button
+          _buildModernButton(
+            label: AppStrings.start,
+            icon: Icons.play_arrow_rounded,
+            onTap: () async {
+              final service = FlutterBackgroundService();
+              await service.startService();
+              service.invoke('setSeconds', {'seconds': count});
+            },
+          ),
+
+          SizedBox(height: 20.h),
+
+          // Stop Button
+          Bounceable(
+            onTap: () async {
+              final service = FlutterBackgroundService();
+              service.invoke('stopService');
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 15.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: AppColors.cError, width: 2),
+                borderRadius: BorderRadius.circular(25.r),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.stop_rounded, color: AppColors.cError, size: 24.sp),
+                  SizedBox(width: 10.w),
+                  Text(
+                    AppStrings.stop,
+                    style: GoogleFonts.cairo(
+                      color: AppColors.cError,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
